@@ -30,19 +30,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Quota',
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
-        primaryColor: Colors.blue,
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.blue,
-          ),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple).copyWith(
+          background: Colors.grey[50]!,
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.blue,
-          ),
-        ),
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ).copyWith(background: Colors.grey[850]!),
       ),
       initialRoute: '/',
       routes: <String, WidgetBuilder>{
@@ -53,10 +50,8 @@ class MyApp extends StatelessWidget {
             create: (book, _) => BookPage(
                   book: book,
                 )),
-        '/new-quote': (_) =>
-            BookArgsExtractor(create: (book, _) => AddQuotePage(book: book)),
-        '/settings': (_) =>
-            BookArgsExtractor(create: (book, _) => SettingsPage(book: book))
+        '/new-quote': (_) => BookArgsExtractor(create: (book, _) => AddQuotePage(book: book)),
+        '/settings': (_) => BookArgsExtractor(create: (book, _) => SettingsPage(book: book))
       },
     );
   }

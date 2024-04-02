@@ -208,12 +208,12 @@ class _BookPageState extends State<BookPage> {
     final quote = _filteredQuotes[i];
     return SizedBox(
         width: MediaQuery.of(context).size.width,
-        child: Card(
+        child: Card.filled(
             child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(children: [
             Text(quote.quote,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.left,
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, fontSize: 15.0)),
             const SizedBox(

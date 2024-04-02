@@ -61,11 +61,14 @@ class Book {
       required this.ownerEmail,
       required this.name});
 
-  factory Book.fromSupabase(Map<String, dynamic> map) => Book(
+  factory Book.fromSupabase(Map<String, dynamic> map) {
+    print(map);
+    return Book(
       ownerEmail: map["owner_email"],
       owner: map["owner"],
       id: map["id"],
       name: map["book_name"]);
+      }
 
   Future<List<Quote>> quotes() async {
     var cachedItem = quotesCache[id];
