@@ -19,10 +19,7 @@ class BooksModel extends ChangeNotifier {
     _loading = true;
 
     try {
-      var books =
-          (await supabase.from("books").select<List<Map<String, dynamic>>>())
-              .map(Book.fromSupabase)
-              .toList();
+      var books = (await supabase.from("books").select<List<Map<String, dynamic>>>()).map(Book.fromSupabase).toList();
 
       _books = books;
     } catch (ex) {

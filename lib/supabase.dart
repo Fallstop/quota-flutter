@@ -13,13 +13,9 @@ class StoredData {
   final List<Quote> needsRemoving;
   final List<NewQuote> needsAdding;
 
-  StoredData(
-      {required this.quotesCache,
-      required this.needsRemoving,
-      required this.needsAdding});
+  StoredData({required this.quotesCache, required this.needsRemoving, required this.needsAdding});
 
-  factory StoredData.fromJson(Map<String, dynamic> json) =>
-      _$StoredDataFromJson(json);
+  factory StoredData.fromJson(Map<String, dynamic> json) => _$StoredDataFromJson(json);
   Map<String, dynamic> toJson() => _$StoredDataToJson(this);
 }
 
@@ -30,8 +26,7 @@ class CacheEntry {
 
   const CacheEntry({required this.expiry, required this.quotes});
 
-  factory CacheEntry.fromJson(Map<String, dynamic> json) =>
-      _$CacheEntryFromJson(json);
+  factory CacheEntry.fromJson(Map<String, dynamic> json) => _$CacheEntryFromJson(json);
   Map<String, dynamic> toJson() => _$CacheEntryToJson(this);
 }
 
@@ -39,12 +34,10 @@ class NewBook {
   late final String name;
   NewBook({required this.name});
 
+
   Future<Book> create() async {
-    return Book.fromSupabase(await supabase
-        .from("books")
-        .insert({"book_name": name})
-        .select('*')
-        .single());
+
+    return Book.fromSupabase(await supabase.from("books").insert({"book_name": name, "owner_email": supabase.auth.currentUser!.email}).select('*').single());
   }
 }
 
@@ -55,26 +48,16 @@ class Book {
   late final String ownerEmail;
   late final String name;
 
-  Book(
-      {required this.id,
-      required this.owner,
-      required this.ownerEmail,
-      required this.name});
+  Book({required this.id, required this.owner, required this.ownerEmail, required this.name});
 
   factory Book.fromSupabase(Map<String, dynamic> map) {
     print(map);
-    return Book(
-      ownerEmail: map["owner_email"],
-      owner: map["owner"],
-      id: map["id"],
-      name: map["book_name"]);
-      }
+    return Book(ownerEmail: map["owner_email"], owner: map["owner"], id: map["id"], name: map["book_name"]);
+  }
 
   Future<List<Quote>> quotes() async {
     var cachedItem = quotesCache[id];
-    if (cachedItem != null &&
-        cachedItem.expiry.millisecondsSinceEpoch >
-            DateTime.now().millisecondsSinceEpoch) {
+    if (cachedItem != null && cachedItem.expiry.millisecondsSinceEpoch > DateTime.now().millisecondsSinceEpoch) {
       return cachedItem.quotes;
     }
 
@@ -96,18 +79,15 @@ class Book {
             ))
         .toList();
 
-    quotesCache[id] = CacheEntry(
-        expiry: DateTime.now().add(const Duration(hours: 3)), quotes: quotes);
+    quotesCache[id] = CacheEntry(expiry: DateTime.now().add(const Duration(hours: 3)), quotes: quotes);
 
     return quotes;
   }
 
-  Future<List<Member>> getMembers() async => (await supabase
-          .from("user_connections")
-          .select<List<Map<String, dynamic>>>("profiles:user (*)")
-          .eq("book", id))
-      .map((entry) => Member.fromSupabase(entry["profiles"]))
-      .toList();
+  Future<List<Member>> getMembers() async =>
+      (await supabase.from("user_connections").select<List<Map<String, dynamic>>>("profiles:user (*)").eq("book", id))
+          .map((entry) => Member.fromSupabase(entry["profiles"]))
+          .toList();
 
   Future<void> addMember(String email) async {
     // Check to make sure we aren't double inserting
@@ -115,23 +95,13 @@ class Book {
       return;
     }
 
-    final Map<String, dynamic> user = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .single();
+    final Map<String, dynamic> user = await supabase.from("profiles").select("id").eq("email", email).single();
 
-    await supabase
-        .from("user_connections")
-        .insert({"user": user["id"], "book": id});
+    await supabase.from("user_connections").insert({"user": user["id"], "book": id});
   }
 
-  Future<Book> updateName(String name) async => Book.fromSupabase(await supabase
-      .from("books")
-      .update({"book_name": name})
-      .eq("id", id)
-      .select("*")
-      .single());
+  Future<Book> updateName(String name) async =>
+      Book.fromSupabase(await supabase.from("books").update({"book_name": name}).eq("id", id).select("*").single());
 
   Future<void> remove() async {
     await supabase.from("user_connections").delete().eq("book", id);
@@ -147,14 +117,10 @@ class Member {
   final String id;
 
   Member({required this.email, required this.id});
-  factory Member.fromSupabase(Map<String, dynamic> entry) =>
-      Member(email: entry["email"], id: entry["id"]);
+  factory Member.fromSupabase(Map<String, dynamic> entry) => Member(email: entry["email"], id: entry["id"]);
 
   Future<void> removeFrom(Book book) async {
-    await supabase
-        .from("user_connections")
-        .delete()
-        .match({"book": book.id, "user": id});
+    await supabase.from("user_connections").delete().match({"book": book.id, "user": id});
   }
 }
 
@@ -166,12 +132,7 @@ class Quote {
   late final DateTime date;
   late final String book;
 
-  Quote(
-      {required this.id,
-      required this.book,
-      required this.date,
-      required this.person,
-      required this.quote});
+  Quote({required this.id, required this.book, required this.date, required this.person, required this.quote});
 
   Future<void> delete(BuildContext context) async {
     try {
@@ -193,26 +154,16 @@ class NewQuote {
   late final String quote;
   late final DateTime date;
 
-  NewQuote(
-      {required this.book,
-      required this.person,
-      required this.quote,
-      required this.date});
+  NewQuote({required this.book, required this.person, required this.quote, required this.date});
 
   Future<void> add() async {
-    final dict = {
-      "book": book,
-      "person": person,
-      "quote": quote,
-      "date": date.toIso8601String()
-    };
+    final dict = {"book": book, "person": person, "quote": quote, "date": date.toIso8601String()};
 
     quotesCache.remove(book);
 
     await supabase.from("quotes").insert(dict);
   }
 
-  factory NewQuote.fromJson(Map<String, dynamic> json) =>
-      _$NewQuoteFromJson(json);
+  factory NewQuote.fromJson(Map<String, dynamic> json) => _$NewQuoteFromJson(json);
   Map<String, dynamic> toJson() => _$NewQuoteToJson(this);
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quota/pages/add_quote_page.dart';
-import 'package:quota/pages/book_args_widget.dart';
+import 'package:quota/widgets/book_args.dart';
 import 'package:quota/pages/books_page.dart';
 import 'package:quota/pages/book_page.dart';
 import 'package:quota/pages/settings_page.dart';
@@ -31,15 +31,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Quota',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple).copyWith(
-          background: Colors.grey[50]!,
-        ),
-      ),
-      darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
           brightness: Brightness.dark,
-        ).copyWith(background: Colors.grey[850]!),
+        ),
       ),
       initialRoute: '/',
       routes: <String, WidgetBuilder>{

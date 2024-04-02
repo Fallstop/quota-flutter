@@ -6,7 +6,7 @@ import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:provider/provider.dart';
 import 'package:quota/books_model.dart';
-import 'package:quota/pages/book_args_widget.dart';
+import 'package:quota/widgets/book_args.dart';
 import 'package:quota/supabase.dart';
 import 'package:quota/contants.dart';
 
@@ -53,15 +53,13 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   AlertDialog _addUserDialog(BuildContext context) => AlertDialog(
-        content: TextField(
-            controller: _memberEmailController,
-            decoration: const InputDecoration(label: Text("User email"))),
+        content:
+            TextField(controller: _memberEmailController, decoration: const InputDecoration(label: Text("User email"))),
         actions: [
           TextButton(
               onPressed: () {
                 if (_memberEmailController.text.trim() == "") {
-                  context.showErrorSnackBar(
-                      message: "Email filed should not be empty");
+                  context.showErrorSnackBar(message: "Email filed should not be empty");
 
                   return;
                 }
@@ -88,8 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       );
 
-  AlertDialog _removeUserDialog(Member member, BuildContext context) =>
-      AlertDialog(
+  AlertDialog _removeUserDialog(Member member, BuildContext context) => AlertDialog(
         content: Text("Are you sure you want to remove ${member.email}"),
         actions: [
           TextButton(
@@ -106,9 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 }).catchError((ex) {
                   Navigator.pop(context);
                   log("Could not remove user", error: ex);
-                  this
-                      .context
-                      .showErrorSnackBar(message: "Could not remove user");
+                  this.context.showErrorSnackBar(message: "Could not remove user");
                 });
               },
               child: const Text("Confirm"))
@@ -158,8 +153,7 @@ class _SettingsPageState extends State<SettingsPage> {
               context.read<BooksModel>().refresh(context);
               Navigator.pop(context);
               Navigator.pop(context);
-              Navigator.pushNamed(context, "/book",
-                  arguments: BookArgs(newBook));
+              Navigator.pushNamed(context, "/book", arguments: BookArgs(newBook));
             }).catchError((ex) {
               log("Could not update book name", error: ex);
               context.showErrorSnackBar(message: "Could not set book name");
@@ -190,16 +184,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(member.email),
-                      TextButton(
+                      TextButton.icon(
                         onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  _removeUserDialog(member, context));
+                          showDialog(context: context, builder: (context) => _removeUserDialog(member, context));
                         },
-                        child: const Text(
+                        label: const Text(
                           "Remove",
                         ),
+                        icon: const Icon(Icons.block),
                       )
                     ],
                   )),
@@ -221,33 +213,25 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: Text("${widget.book.name} Settings")),
-        body: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            child: SingleChildScrollView(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.7,
-                        child: Card(
-                          child: _buildBookSettings(),
-                        )),
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.7,
-                        child: Card(
-                          child: _buildMembersList(),
-                        )),
-                    ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (context) => _deleteBookDialog(context));
-                        },
-                        style: const ButtonStyle(
-                            backgroundColor:
-                                MaterialStatePropertyAll(Colors.red)),
-                        child: const Text("Delete Book"))
-                  ]),
-            )));
+        body: SingleChildScrollView(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Card(
+              margin: const EdgeInsets.fromLTRB(15, 0, 15, 15),
+              child: _buildBookSettings(),
+            ),
+            Card(
+              margin: const EdgeInsets.fromLTRB(15, 0, 15, 15),
+              child: _buildMembersList(),
+            ),
+            FilledButton.tonal(
+                onPressed: () {
+                  showDialog(context: context, builder: (context) => _deleteBookDialog(context));
+                },
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red[900]),
+                ),
+                child: const Text("Delete Book"))
+          ]),
+        ));
   }
 }

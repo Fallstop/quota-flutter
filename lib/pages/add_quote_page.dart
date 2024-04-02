@@ -40,16 +40,14 @@ class _AddQuotePageState extends State<AddQuotePage> {
                   TextFormField(
                     controller: _quoteController,
                     decoration: const InputDecoration(labelText: "Quote"),
-                    validator: (value) => (value == null || value.trim() == "")
-                        ? "Quote must not be an empty string"
-                        : null,
+                    validator: (value) =>
+                        (value == null || value.trim() == "") ? "Quote must not be an empty string" : null,
                   ),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(labelText: "Person"),
-                    validator: (value) => (value == null || value.trim() == "")
-                        ? "Name must not be an empty string"
-                        : null,
+                    validator: (value) =>
+                        (value == null || value.trim() == "") ? "Name must not be an empty string" : null,
                   ),
                   FormField(
                       builder: (context) => TextButton(
@@ -84,8 +82,7 @@ class _AddQuotePageState extends State<AddQuotePage> {
                           }).catchError((ex) {
                             print("Quote add failed");
                             print(ex);
-                            context.showErrorSnackBar(
-                                message: "Could not add quote");
+                            context.showErrorSnackBar(message: "Could not add quote");
                             Navigator.of(context).pop(false);
                           });
                         }

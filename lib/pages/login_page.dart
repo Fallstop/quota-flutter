@@ -14,8 +14,7 @@ class LoginPage extends StatefulWidget {
 }
 
 // I did not create this regex my self, thanks https://www.abstractapi.com/tools/email-regex-guide
-final emailRegex = RegExp(
-    r'^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$');
+final emailRegex = RegExp(r'^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$');
 
 class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
@@ -32,8 +31,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await supabase.auth.signInWithPassword(
-          password: _passwordController.text, email: _emailController.text);
+      await supabase.auth.signInWithPassword(password: _passwordController.text, email: _emailController.text);
     } on AuthException catch (error) {
       context.showErrorSnackBar(message: error.message);
     } catch (ex) {
@@ -78,8 +76,7 @@ class _LoginPageState extends State<LoginPage> {
       await supabase.auth.signUp(
           password: _passwordController.text,
           email: _emailController.text,
-          emailRedirectTo:
-              kIsWeb ? null : "nz.laspruca.quotes://login-callback");
+          emailRedirectTo: kIsWeb ? null : "nz.laspruca.quotes://login-callback");
     } on AuthException catch (error) {
       context.showErrorSnackBar(message: error.message);
     } catch (error) {
@@ -138,9 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                     autofillHints: const [AutofillHints.email],
                     decoration: const InputDecoration(label: Text("Email")),
                     validator: (value) =>
-                        value != null && emailRegex.hasMatch(value)
-                            ? null
-                            : "Please enter a valid email",
+                        value != null && emailRegex.hasMatch(value) ? null : "Please enter a valid email",
                     onChanged: (value) => {
                       setState(() {
                         _validEmail = emailRegex.hasMatch(value.trim());
@@ -156,17 +151,13 @@ class _LoginPageState extends State<LoginPage> {
                           _validPassword = value.trim() != "";
                         });
                       },
-                      decoration:
-                          const InputDecoration(label: Text("Password"))),
+                      decoration: const InputDecoration(label: Text("Password"))),
                   ElevatedButton(
-                    onPressed:
-                        (_validEmail && !_isLoading) ? _signInEmail : null,
+                    onPressed: (_validEmail && !_isLoading) ? _signInEmail : null,
                     child: const Text("Send magic link"),
                   ),
                   ElevatedButton(
-                    onPressed: (_validEmail && _validPassword && !_isLoading)
-                        ? _signInPassword
-                        : null,
+                    onPressed: (_validEmail && _validPassword && !_isLoading) ? _signInPassword : null,
                     child: const Text("Sign in"),
                   )
                 ],
@@ -181,9 +172,7 @@ class _LoginPageState extends State<LoginPage> {
                     autofillHints: const [AutofillHints.email],
                     decoration: const InputDecoration(label: Text("Email")),
                     validator: (value) =>
-                        value != null && emailRegex.hasMatch(value)
-                            ? null
-                            : "Please enter a valid email",
+                        value != null && emailRegex.hasMatch(value) ? null : "Please enter a valid email",
                     onChanged: (value) => {
                       setState(() {
                         _validEmail = emailRegex.hasMatch(value.trim());
@@ -199,12 +188,9 @@ class _LoginPageState extends State<LoginPage> {
                           _validPassword = value.trim() != "";
                         });
                       },
-                      decoration:
-                          const InputDecoration(label: Text("Password"))),
+                      decoration: const InputDecoration(label: Text("Password"))),
                   ElevatedButton(
-                    onPressed: (_validEmail && _validPassword && !_isLoading)
-                        ? _signUp
-                        : null,
+                    onPressed: (_validEmail && _validPassword && !_isLoading) ? _signUp : null,
                     child: const Text("Sign up"),
                   )
                 ],

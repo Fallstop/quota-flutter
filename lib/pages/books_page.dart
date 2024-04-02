@@ -3,8 +3,10 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quota/books_model.dart';
-import 'package:quota/pages/book_args_widget.dart';
+import 'package:quota/widgets/book_args.dart';
 import 'package:quota/pages/book_page.dart';
+import 'package:quota/widgets/book.dart';
+import 'package:quota/widgets/new_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../contants.dart';
@@ -67,88 +69,27 @@ class _BooksPageState extends State<BooksPage> {
     }
 
     List<Book> books = booksModel.books;
-    books.sort((a, b) => a.ownerEmail == supabase.auth.currentUser!.email ? -1 : 1);
-
+    String user_email = supabase.auth.currentUser!.email ?? "";
+    // Sort first putting the books owned by the user first, then alphabetically
+    books.sort((a, b) {
+      if (a.ownerEmail == user_email && b.ownerEmail != user_email) {
+        return -1;
+      } else if (a.ownerEmail != user_email && b.ownerEmail == user_email) {
+        return 1;
+      } else {
+        return a.name.compareTo(b.name);
+      }
+    });
 
     // Add all books owned by other users
     List<Widget> bookCards = books
-        .map((book) => Card.outlined(
-            margin: const EdgeInsets.all(15.0),
-            child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(children: [
-                  Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Text(
-                        book.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
-                      )),
-                  Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                      child: Text(
-                        book.ownerEmail,
-                        style: const TextStyle(fontSize: 15),
-                      )),
-                  ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, "/book", arguments: BookArgs(book));
-                      },
-                      child: const Text("View"))
-                ]))))
+        .map(
+          (book) => BookWidget(book: book),
+        )
         .toList();
 
     return ListView(
-      children: [
-        ...bookCards,
-        Padding(
-          padding: EdgeInsets.fromLTRB(15.0,15.0,15.0,40.0),
-          child: ElevatedButton(
-              onPressed: () {
-                showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                          title: const Text("Add details"),
-                          content: Column(children: [
-                            TextField(
-                              decoration: const InputDecoration(label: Text("Book name")),
-                              controller: _bookNameController,
-                            )
-                          ]),
-                          actions: [
-                            TextButton(
-                                onPressed: () {
-                                  if (_bookNameController.text.trim().isEmpty) {
-                                    context.showErrorSnackBar(message: "Book name should not be empty");
-                                    return;
-                                  }
-                                  Navigator.pop(context, true);
-                                },
-                                child: const Text("Ok")),
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel"))
-                          ],
-                        )).then((result) {
-                  if (result ?? false) {
-                    if (_bookNameController.text.trim() == "") {
-                      context.showErrorSnackBar(message: "Book name not be empty");
-                      return;
-                    }
-
-                    _bookNameController.clear();
-                    booksModel.refresh(context);
-                    final newBook = NewBook(name: _bookNameController.text);
-
-                    newBook.create().then((book) {
-                      Navigator.pushNamed(context, "/book", arguments: BookArgs(book));
-                    }).catchError((ex) {
-                      log("Cound not create book", error: ex);
-                      context.showErrorSnackBar(message: "Could not create book");
-                    });
-                  }
-                });
-              },
-              child: const Text("Create Book")),
-        )
-      ],
+      children: bookCards,
     );
   }
 
@@ -158,15 +99,15 @@ class _BooksPageState extends State<BooksPage> {
         appBar: AppBar(title: const Text("Select book"), actions: [
           Padding(
             padding: const EdgeInsets.all(10.0),
-            child: ElevatedButton.icon(
-                onPressed: _signOut,
-                icon: const Icon(Icons.logout),
-                label: const Text("Logout"),
-                style: const ButtonStyle(backgroundColor: MaterialStatePropertyAll<Color>(Colors.red))),
+            child: OutlinedButton.icon(
+              onPressed: _signOut,
+              icon: const Icon(Icons.logout),
+              label: const Text("Logout"),
+
+            ),
           ),
         ]),
-        floatingActionButton: FloatingActionButton(
-            onPressed: () => context.read<BooksModel>().refresh(context), child: const Icon(Icons.refresh)),
+        floatingActionButton: const NewBookWidget(),
         body: Container(
           width: MediaQuery.of(context).size.width,
           child: Consumer<BooksModel>(
