@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return DynamicColorBuilder(builder: (lightColorScheme, darkColorScheme) {
       return MaterialApp(
-        title: 'Quota',
+        title: 'Quota Flutter',
         theme: ThemeData(
           colorScheme: lightColorScheme ?? ColorScheme.fromSeed(
             seedColor: Colors.deepPurple,
