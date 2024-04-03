@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 
@@ -36,26 +37,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Quota',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
+    return DynamicColorBuilder(builder: (lightColorScheme, darkColorScheme) {
+      return MaterialApp(
+        title: 'Quota',
+        theme: ThemeData(
+          colorScheme: lightColorScheme ?? ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+          ),
         ),
-      ),
-      initialRoute: '/',
-      routes: <String, WidgetBuilder>{
-        '/': (_) => const SplashPage(),
-        '/login': (_) => const LoginPage(),
-        '/books': (_) => const BooksPage(),
-        '/book': (_) => BookArgsExtractor(
-            create: (bookId, _) => BookPage(
-                  bookId: bookId,
-                )),
-        '/new-quote': (_) => BookArgsExtractor(create: (bookId, _) => AddQuotePage(bookId: bookId)),
-        '/settings': (_) => BookArgsExtractor(create: (bookId, _) => SettingsPage(bookId: bookId))
-      },
-    );
+        darkTheme: ThemeData(
+          colorScheme: darkColorScheme ?? ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+            brightness: Brightness.dark,
+          ),
+        ),
+        initialRoute: '/',
+        routes: <String, WidgetBuilder>{
+          '/': (_) => const SplashPage(),
+          '/login': (_) => const LoginPage(),
+          '/books': (_) => const BooksPage(),
+          '/book': (_) => BookArgsExtractor(
+              create: (bookId, _) => BookPage(
+                    bookId: bookId,
+                  )),
+          '/new-quote': (_) => BookArgsExtractor(create: (bookId, _) => AddQuotePage(bookId: bookId)),
+          '/settings': (_) => BookArgsExtractor(create: (bookId, _) => SettingsPage(bookId: bookId))
+        },
+      );
+    });
   }
 }

@@ -16,7 +16,7 @@ class BookWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      child: Card.outlined(
+      child: Card(
         margin: const EdgeInsets.all(15.0),
         child: Padding(
           padding: const EdgeInsets.all(10.0),

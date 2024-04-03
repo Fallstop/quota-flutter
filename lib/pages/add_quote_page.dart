@@ -17,9 +17,11 @@ final RegExp dateTimeRegex = RegExp(r'^(\d{1,2})\/(\d{1,2})\/((\d{2}){1,2})$');
 
 class _AddQuotePageState extends State<AddQuotePage> {
   final GlobalKey<FormState> _formKey = GlobalKey();
-  final DateTime date = DateTime.now();
+  DateTime date = DateTime.now();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quoteController = TextEditingController();
+
+  bool formValid = false;
 
   @override
   void dispose() {
@@ -35,9 +37,12 @@ class _AddQuotePageState extends State<AddQuotePage> {
           child: Form(
               key: _formKey,
               onChanged: () {
-                _formKey.currentState!.validate();
+                setState(() {
+                  formValid = _formKey.currentState!.validate();
+                });
               },
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   TextFormField(
                     controller: _quoteController,
@@ -45,54 +50,59 @@ class _AddQuotePageState extends State<AddQuotePage> {
                     validator: (value) =>
                         (value == null || value.trim() == "") ? "Quote must not be an empty string" : null,
                   ),
+                  SizedBox(height: 10),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(labelText: "Person"),
                     validator: (value) =>
                         (value == null || value.trim() == "") ? "Name must not be an empty string" : null,
                   ),
-                  FormField(
-                      builder: (context) => TextButton(
+                  const SizedBox(height: 10),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      FormField(
+                        builder: (context) => OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_month),
                           onPressed: () async {
-                            var date = await showDatePicker(
+                            date = await showDatePicker(
                                 context: context.context,
                                 initialDate: this.date,
                                 firstDate: DateTime(2010),
-                                lastDate: DateTime.now());
+                                lastDate: DateTime.now()) ?? date;
                           },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("${date.day}/${date.month}/${date.year}",
-                                  style: const TextStyle(color: Colors.white)),
-                              const Icon(Icons.calendar_month)
-                            ],
-                          ))),
-                  ElevatedButton.icon(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          print("adding quote");
-                          NewQuote(
-                                  book: widget.bookId,
-                                  date: date,
-                                  person: _nameController.text,
-                                  quote: _quoteController.text)
-                              .add()
-                              .then((_) {
-                            print("Success");
-                            Provider.of<QuotesModel>(context, listen: false).refresh(context, widget.bookId);
+                          label: Text("${date.day}/${date.month}/${date.year}"),
+                        ),
+                      ),
+                      FilledButton.icon(
+                        label: const Text("Submit"),
+                        onPressed: !formValid
+                            ? null
+                            : () {
+                                print("adding quote");
+                                NewQuote(
+                                        book: widget.bookId,
+                                        date: date,
+                                        person: _nameController.text,
+                                        quote: _quoteController.text)
+                                    .add()
+                                    .then((_) {
+                                  print("Success");
+                                  Provider.of<QuotesModel>(context, listen: false).refresh(context, widget.bookId);
 
-                            Navigator.of(context).pop(true);
-                          }).catchError((ex) {
-                            print("Quote add failed");
-                            print(ex);
-                            context.showErrorSnackBar(message: "Could not add quote");
-                            Navigator.of(context).pop(false);
-                          });
-                        }
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text("Submit"))
+                                  Navigator.of(context).pop(true);
+                                }).catchError((ex) {
+                                  print("Quote add failed");
+                                  print(ex);
+                                  context.showErrorSnackBar(message: "Could not add quote");
+                                  Navigator.of(context).pop(false);
+                                });
+                              },
+                        icon: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
                 ],
               )),
         ));
