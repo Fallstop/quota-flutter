@@ -1,19 +1,18 @@
-import 'package:flutter/cupertino.dart';
-import 'package:quota/supabase.dart';
+import 'package:flutter/material.dart';
 
 class BookArgs {
-  final Book book;
+  final String bookId;
 
-  BookArgs(this.book);
+  BookArgs(this.bookId);
 }
 
 class BookArgsExtractor extends StatelessWidget {
-  final Function(Book book, BuildContext context) create;
+  final Function(String bookId, BuildContext context) create;
   const BookArgsExtractor({super.key, required this.create});
 
   @override
   Widget build(BuildContext context) {
     var args = ModalRoute.of(context)!.settings.arguments as BookArgs;
-    return create(args.book, context);
+    return create(args.bookId, context);
   }
 }

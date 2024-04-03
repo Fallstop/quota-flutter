@@ -1,16 +1,15 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:quota/books_model.dart';
-import 'package:quota/widgets/book_args.dart';
-import 'package:quota/pages/book_page.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:quota/state/books_model.dart';
+import 'package:quota/state/quotes_model.dart';
+import 'package:quota/state/supabase.dart';
 import 'package:quota/widgets/book.dart';
 import 'package:quota/widgets/new_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../contants.dart';
-import '../supabase.dart';
 
 class BooksPage extends StatefulWidget {
   const BooksPage({super.key});
@@ -23,7 +22,7 @@ class _BooksPageState extends State<BooksPage> {
   late TextEditingController _bookNameController;
 
   Future<void> _signOut() async {
-    context.read<BooksModel>().clear();
+    provider.Provider.of<BooksModel>(context, listen: false).clear();
     try {
       await supabase.auth.signOut();
     } on AuthException catch (error) {
@@ -40,7 +39,7 @@ class _BooksPageState extends State<BooksPage> {
   void initState() {
     super.initState();
     _bookNameController = TextEditingController();
-    context.read<BooksModel>().refresh(context);
+    // provider.Provider.of<BooksModel>(context, listen: false).refresh(context);
   }
 
   @override
@@ -49,7 +48,7 @@ class _BooksPageState extends State<BooksPage> {
     super.dispose();
   }
 
-  Widget _booksView(BuildContext context, BooksModel booksModel, Widget? child) {
+  Widget _booksView(BuildContext context, BooksModel booksModel, QuotesModel quotesModel, Widget? child) {
     final loading = booksModel.loading;
 
     // If the books are still loading, return a loading spinner
@@ -84,35 +83,48 @@ class _BooksPageState extends State<BooksPage> {
     // Add all books owned by other users
     List<Widget> bookCards = books
         .map(
-          (book) => BookWidget(book: book),
+          (book) => BookWidget(book: book, quoteCount: quotesModel.quotesForBook(book.id).length),
         )
         .toList();
 
     return ListView(
-      children: bookCards,
+      children: [
+        ...bookCards,
+        const SizedBox(
+          height: 50,
+          )
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text("Select book"), actions: [
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: OutlinedButton.icon(
-              onPressed: _signOut,
-              icon: const Icon(Icons.logout),
-              label: const Text("Logout"),
-
-            ),
+      appBar: AppBar(title: const Text("Select book"), actions: [
+        Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: OutlinedButton.icon(
+            onPressed: _signOut,
+            icon: const Icon(Icons.logout),
+            label: const Text("Logout"),
           ),
-        ]),
-        floatingActionButton: const NewBookWidget(),
-        body: Container(
+        ),
+      ]),
+      floatingActionButton: const NewBookWidget(),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          log("Wow! Refreshing!");
+          await provider.Provider.of<QuotesModel>(context, listen: false).refreshAll(context);
+          await provider.Provider.of<BooksModel>(context, listen: false).refresh(context);
+          log("Wow! Refreshed!");
+        },
+        child: Container(
           width: MediaQuery.of(context).size.width,
-          child: Consumer<BooksModel>(
+          child: provider.Consumer2<BooksModel, QuotesModel>(
             builder: _booksView,
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

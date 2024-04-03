@@ -1,8 +1,10 @@
 import 'dart:developer';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart' as provider;
 import 'package:quota/contants.dart';
-import 'package:quota/supabase.dart';
+import 'package:quota/state/quotes_model.dart';
+import 'package:quota/state/supabase.dart';
 
 class BooksModel extends ChangeNotifier {
   List<Book> _books = [];
@@ -15,11 +17,29 @@ class BooksModel extends ChangeNotifier {
     return _loading;
   }
 
-  Future<void> refresh(BuildContext context) async {
+  BooksModel (BuildContext context) {
+    refresh(context);
+  }
+
+  Book bookById(String id) {
+    return _books.firstWhere((element) => element.id == id);
+  }
+
+  Future<void> refresh(BuildContext context, {bool alsoRefreshQuotes = false}) async {
+
+    if (supabase.auth.currentSession == null) {
+      return;
+    }
+
     _loading = true;
 
     try {
+      if (alsoRefreshQuotes) {
+        await provider.Provider.of<QuotesModel>(context, listen: false).refreshAll(context);
+      }
+      
       var books = (await supabase.from("books").select<List<Map<String, dynamic>>>()).map(Book.fromSupabase).toList();
+
 
       _books = books;
     } catch (ex) {

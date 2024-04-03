@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:quota/supabase.dart';
+import 'package:quota/state/supabase.dart';
 
 class QuoteRemoveWidget extends StatelessWidget {
   const QuoteRemoveWidget({

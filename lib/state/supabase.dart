@@ -1,34 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:quota/contants.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:quota/state/quotes_model.dart';
 
 part 'supabase.g.dart';
 
-Map<String, CacheEntry> quotesCache = {};
-
-@JsonSerializable()
-class StoredData {
-  final Map<String, CacheEntry> quotesCache;
-  final List<Quote> needsRemoving;
-  final List<NewQuote> needsAdding;
-
-  StoredData({required this.quotesCache, required this.needsRemoving, required this.needsAdding});
-
-  factory StoredData.fromJson(Map<String, dynamic> json) => _$StoredDataFromJson(json);
-  Map<String, dynamic> toJson() => _$StoredDataToJson(this);
-}
-
-@JsonSerializable()
-class CacheEntry {
-  final DateTime expiry;
-  final List<Quote> quotes;
-
-  const CacheEntry({required this.expiry, required this.quotes});
-
-  factory CacheEntry.fromJson(Map<String, dynamic> json) => _$CacheEntryFromJson(json);
-  Map<String, dynamic> toJson() => _$CacheEntryToJson(this);
-}
 
 class NewBook {
   late final String name;
@@ -55,34 +32,16 @@ class Book {
     return Book(ownerEmail: map["owner_email"], owner: map["owner"], id: map["id"], name: map["book_name"]);
   }
 
-  Future<List<Quote>> quotes() async {
-    var cachedItem = quotesCache[id];
-    if (cachedItem != null && cachedItem.expiry.millisecondsSinceEpoch > DateTime.now().millisecondsSinceEpoch) {
-      return cachedItem.quotes;
+  Future<List<Quote>> quotes(BuildContext context, {bool refresh_quotes = false}) async {
+    QuotesModel quote_model = context.read();
+
+    if (!quote_model.hasQuotesForBook(id) || refresh_quotes) {
+      await quote_model.refresh(context, id);
     }
 
-    return await fetchQuotes();
+    return quote_model.quotesForBook(id);
   }
 
-  Future<List<Quote>> fetchQuotes() async {
-    var quotes = (await supabase
-            .from("quotes")
-            .select<List<Map<String, dynamic>>>()
-            .eq("book", id)
-            .order("date", ascending: true))
-        .map((map) => Quote(
-              person: map["person"],
-              quote: map["quote"],
-              date: DateTime.parse(map["date"]),
-              book: map["book"],
-              id: map["id"],
-            ))
-        .toList();
-
-    quotesCache[id] = CacheEntry(expiry: DateTime.now().add(const Duration(hours: 3)), quotes: quotes);
-
-    return quotes;
-  }
 
   Future<List<Member>> getMembers() async =>
       (await supabase.from("user_connections").select<List<Map<String, dynamic>>>("profiles:user (*)").eq("book", id))
@@ -106,6 +65,10 @@ class Book {
   Future<void> remove() async {
     await supabase.from("user_connections").delete().eq("book", id);
     await supabase.from("books").delete().eq("id", id);
+  }
+
+  bool isUserOwner() {
+    return ownerEmail == supabase.auth.currentUser!.email;
   }
 
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);
@@ -137,7 +100,6 @@ class Quote {
   Future<void> delete(BuildContext context) async {
     try {
       await supabase.from("quotes").delete().eq("id", id);
-      quotesCache.remove(book);
     } catch (ex) {
       context.showErrorSnackBar(message: "Could not delete quote $quote");
     }
@@ -159,7 +121,6 @@ class NewQuote {
   Future<void> add() async {
     final dict = {"book": book, "person": person, "quote": quote, "date": date.toIso8601String()};
 
-    quotesCache.remove(book);
 
     await supabase.from("quotes").insert(dict);
   }

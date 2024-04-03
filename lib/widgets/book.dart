@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:quota/state/quotes_model.dart';
 import 'package:quota/widgets/book_args.dart';
-import 'package:quota/supabase.dart';
+import 'package:quota/state/supabase.dart';
 
 class BookWidget extends StatelessWidget {
   const BookWidget({
     super.key,
     required this.book,
+    required this.quoteCount,
   });
 
   final Book book;
+  final int quoteCount;
 
   @override
   Widget build(BuildContext context) {
@@ -17,21 +20,48 @@ class BookWidget extends StatelessWidget {
         margin: const EdgeInsets.all(15.0),
         child: Padding(
           padding: const EdgeInsets.all(10.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      book.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                    child: Text(
+                      book.ownerEmail,
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
               Padding(
                 padding: const EdgeInsets.all(10),
-                child: Text(
-                  book.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                child: Text(
-                  book.ownerEmail,
-                  style: const TextStyle(fontSize: 15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        quoteCount.toString(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 25.0),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
+                      child: Text(
+                        "quotes",
+                        style: TextStyle(fontSize: 15),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -39,7 +69,7 @@ class BookWidget extends StatelessWidget {
         ),
       ),
       onTap: () {
-        Navigator.pushNamed(context, "/book", arguments: BookArgs(book));
+        Navigator.pushNamed(context, "/book", arguments: BookArgs(book.id));
       },
     );
   }

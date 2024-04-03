@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:quota/contants.dart';
+import 'package:quota/state/quotes_model.dart';
 
-import '../supabase.dart';
+import '../state/supabase.dart';
 
 class AddQuotePage extends StatefulWidget {
-  final Book book;
-  const AddQuotePage({super.key, required this.book});
+  final String bookId;
+  const AddQuotePage({super.key, required this.bookId});
 
   @override
   State<AddQuotePage> createState() => _AddQuotePageState();
@@ -71,13 +73,15 @@ class _AddQuotePageState extends State<AddQuotePage> {
                         if (_formKey.currentState!.validate()) {
                           print("adding quote");
                           NewQuote(
-                                  book: widget.book.id,
+                                  book: widget.bookId,
                                   date: date,
                                   person: _nameController.text,
                                   quote: _quoteController.text)
                               .add()
                               .then((_) {
                             print("Success");
+                            Provider.of<QuotesModel>(context, listen: false).refresh(context, widget.bookId);
+
                             Navigator.of(context).pop(true);
                           }).catchError((ex) {
                             print("Quote add failed");

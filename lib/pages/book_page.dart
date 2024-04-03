@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quota/state/books_model.dart';
+import 'package:quota/state/quotes_model.dart';
 import 'package:quota/widgets/quote.dart';
 import 'package:quota/contants.dart';
 import 'package:quota/widgets/book_args.dart';
-import 'package:quota/supabase.dart';
+import 'package:quota/state/supabase.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
-class BookPage extends StatefulWidget {
+class QuoteView extends StatefulWidget {
+  final List<Quote> quotes;
   final Book book;
-  const BookPage({super.key, required this.book});
+  const QuoteView({super.key, required this.quotes, required this.book});
 
   @override
-  State<BookPage> createState() => _BookPageState();
+  State<QuoteView> createState() => _QuoteViewState();
 }
 
-class _BookPageState extends State<BookPage> {
-  List<Quote> _quotes = [];
-  List<Quote> _filteredQuotes = [];
+class _QuoteViewState extends State<QuoteView> {
 
   bool _loading = false;
   bool _isOwner = false;
-  bool _search = false;
   late final TextEditingController _searchText;
-  // late Book book;
 
   Future<void> _getQuotes([bool refresh = false]) async {
     try {
@@ -34,15 +34,7 @@ class _BookPageState extends State<BookPage> {
         });
       }
 
-      var quotes = refresh ? await widget.book.fetchQuotes() : await widget.book.quotes();
-      quotes.sort(
-        (a, b) => b.date.compareTo(a.date),
-      );
-
       setState(() {
-        _quotes = quotes;
-        _filteredQuotes = quotes;
-        _search = false;
         _searchText.clear();
       });
     } catch (ex) {
@@ -70,95 +62,129 @@ class _BookPageState extends State<BookPage> {
     super.dispose();
   }
 
-  Future<void> _filterQuotes() async {
+  List<Quote> _filterQuotes() {
     final matches = extractAllSorted<Quote>(
-        query: _searchText.text, choices: _quotes, getter: (e) => "${e.person} ${e.quote}", cutoff: 65);
+        query: _searchText.text, choices: widget.quotes, getter: (e) => "${e.person} ${e.quote}", cutoff: 65);
 
-    setState(() {
-      _filteredQuotes = matches.map((e) => e.choice).toList();
-    });
+    return matches.map((e) => e.choice).toList();
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: Text(widget.book.name),
-          bottom: _search
-              ? PreferredSize(
-                  preferredSize: const Size(double.infinity, 45),
-                  child: TextField(
-                    controller: _searchText,
-                    decoration: const InputDecoration(hintText: "Search", icon: Icon(Icons.search)),
-                    onChanged: (_) {
-                      if (_searchText.text != "") {
-                        _filterQuotes();
-                      } else {
-                        setState(() {
-                          _filteredQuotes = _quotes;
-                        });
-                      }
-                    },
-                  ))
-              : null,
-          actions: () {
-            List<Widget> children = [
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () {
-                  if (_search) {
-                    setState(() {
-                      _search = false;
-                      _filteredQuotes = _quotes;
-                      _searchText.clear();
-                    });
-                  } else {
-                    setState(() {
-                      _search = true;
-                    });
-                  }
-                },
-              )
-            ];
+  Widget build(BuildContext context) {
+    List<Quote> filteredQuotes = _searchText.text.isEmpty ? widget.quotes : _filterQuotes();
+    
 
-            if (_isOwner) {
-              children.add(IconButton(
-                  onPressed: () {
-                    Navigator.of(context).pushNamed("/settings", arguments: BookArgs(widget.book));
-                  },
-                  icon: const Icon(Icons.settings)));
-            }
-
-            return children;
-          }(),
+    if (_loading) {
+      return SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [CircularProgressIndicator(), Text("Loading")],
         ),
-        floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.create),
-          onPressed: () async {
-            var result = ((await Navigator.of(context).pushNamed("/new-quote", arguments: BookArgs(widget.book))) ??
-                false) as bool;
-            if (result) {
-              await _getQuotes();
-            }
-          },
-        ),
-        body: _loading
-            ? SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [CircularProgressIndicator(), Text("Loading")],
-                ))
-            : RefreshIndicator(
-                onRefresh: () => _getQuotes(true),
-                child: Scrollbar(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                    itemBuilder: (BuildContext context, int i) =>
-                        QuoteWidget(quote: _filteredQuotes[i], isOwner: _isOwner),
-                    itemCount: _filteredQuotes.length,
-                  ),
-                ),
-              ),
       );
+    } else {
+      return RefreshIndicator(
+        onRefresh: () async {
+          await Provider.of<QuotesModel>(context, listen: false).refresh(context, widget.book.id);
+          int foundQuotes = Provider.of<QuotesModel>(context, listen: false).quotesForBook(widget.book.id).length;
+          context.showSnackBar(message: "Refreshed! Found $foundQuotes quotes.");
+        },
+        child: Scrollbar(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+            itemBuilder: (BuildContext context, int i) => QuoteWidget(quote: filteredQuotes[i], isOwner: _isOwner),
+            itemCount: filteredQuotes.length,
+          ),
+        ),
+      );
+    }
+  }
 }
+
+class BookPage extends StatelessWidget {
+  final String bookId;
+  const BookPage({super.key, required this.bookId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<BooksModel>(
+      builder: (context, booksModel, child) {
+        Book book = booksModel.bookById(bookId);
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(book.name),
+            actions: () {
+              List<Widget> children = [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    // if (_search) {
+                    //   setState(() {
+                    //     _search = false;
+                    //     _filteredQuotes = _quotes;
+                    //     _searchText.clear();
+                    //   });
+                    // } else {
+                    //   setState(() {
+                    //     _search = true;
+                    //   });
+                    // }
+                  },
+                )
+              ];
+
+              if (book.isUserOwner()) {
+                children.add(IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed("/settings", arguments: BookArgs(bookId));
+                    },
+                    icon: const Icon(Icons.settings)));
+              }
+
+              return children;
+            }(),
+          ),
+          floatingActionButton: FloatingActionButton(
+            child: const Icon(Icons.create),
+            onPressed: () async {
+              var result =
+                  ((await Navigator.of(context).pushNamed("/new-quote", arguments: BookArgs(bookId))) ?? false) as bool;
+              if (result) {}
+            },
+          ),
+          body: Consumer<QuotesModel>(builder: (context, quotesModel, child) {
+            List<Quote> quotes = quotesModel.quotesForBook(bookId);
+            quotes.sort(
+              (a, b) => b.date.compareTo(a.date),
+            );
+            return QuoteView(
+              quotes: quotes,
+              book: book,
+            );
+          }),
+        );
+      },
+    );
+  }
+}
+
+
+// _search
+//               ? PreferredSize(
+//                   preferredSize: const Size(double.infinity, 45),
+//                   child: TextField(
+//                     controller: _searchText,
+//                     decoration: const InputDecoration(hintText: "Search", icon: Icon(Icons.search)),
+//                     onChanged: (_) {
+//                       if (_searchText.text != "") {
+//                         _filterQuotes();
+//                       } else {
+//                         setState(() {
+//                           _filteredQuotes = _quotes;
+//                         });
+//                       }
+//                     },
+//                   ))
+//               : null,

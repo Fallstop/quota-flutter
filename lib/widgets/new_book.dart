@@ -1,9 +1,10 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:quota/books_model.dart';
+import 'package:provider/provider.dart';
+import 'package:quota/state/books_model.dart';
 import 'package:quota/contants.dart';
-import 'package:quota/supabase.dart';
+import 'package:quota/state/supabase.dart';
 import 'package:quota/widgets/book_args.dart';
 
 class NewBookWidget extends StatefulWidget {
@@ -31,7 +32,7 @@ class _NewBookState extends State<NewBookWidget> {
       onPressed: () {
         showDialog<bool>(context: context, builder: (context) => NewBookDialog(bookNameController: _bookNameController))
             .then(
-          (result) {
+          (result) async {
             log(result.toString());
             if (result ?? false) {
               // The Dialog was closed with OK.
@@ -41,11 +42,13 @@ class _NewBookState extends State<NewBookWidget> {
               }
 
               final newBook = NewBook(name: _bookNameController.text);
-              // booksModel.refresh(context);
+              
+              await Provider.of<BooksModel>(context, listen: false).refresh(context);
+
               _bookNameController.clear();
 
               newBook.create().then((book) {
-                Navigator.pushNamed(context, "/book", arguments: BookArgs(book));
+                Navigator.pushNamed(context, "/book", arguments: BookArgs(book.id));
               }).catchError((ex) {
                 log("Cound not create book", error: ex);
                 context.showErrorSnackBar(message: "Could not create book");
@@ -95,7 +98,7 @@ class _NewBookDialogState extends State<NewBookDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text("New Book ${isBookNameEmpty}"),
+      title: const Text("New Book"),
       content: TextField(
         decoration: const InputDecoration(label: Text("Book name")),
         controller: widget.bookNameController,

@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/container.dart';
 import 'package:flutter/src/widgets/framework.dart';
-import 'package:provider/provider.dart';
-import 'package:quota/books_model.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:quota/state/books_model.dart';
 import 'package:quota/widgets/book_args.dart';
-import 'package:quota/supabase.dart';
+import 'package:quota/state/supabase.dart';
 import 'package:quota/contants.dart';
 
 class SettingsPage extends StatefulWidget {
-  final Book book;
+  final String bookId;
 
-  const SettingsPage({super.key, required this.book});
+  const SettingsPage({super.key, required this.bookId});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -23,10 +23,11 @@ class _SettingsPageState extends State<SettingsPage> {
   List<Member> _members = [];
   late TextEditingController _memberEmailController;
   late TextEditingController _bookNameController;
+  late Book book;
 
   Future _getMembers() async {
     try {
-      final members = await widget.book.getMembers();
+      final members = await book.getMembers();
 
       setState(() {
         _members = members;
@@ -41,7 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     _memberEmailController = TextEditingController();
     _bookNameController = TextEditingController();
-    _bookNameController.text = widget.book.name;
+    book = provider.Provider.of<BooksModel>(context, listen: false).bookById(widget.bookId);
     _getMembers();
     super.initState();
   }
@@ -66,7 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 Navigator.pop(context);
 
-                widget.book.addMember(_memberEmailController.text.trim()).then(
+                book.addMember(_memberEmailController.text.trim()).then(
                   (_) {
                     _getMembers();
                   },
@@ -96,7 +97,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text("Cancel")),
           TextButton(
               onPressed: () {
-                member.removeFrom(widget.book).then((value) {
+                member.removeFrom(book).then((value) {
                   _getMembers().then((_) {
                     Navigator.pop(context);
                   });
@@ -111,13 +112,13 @@ class _SettingsPageState extends State<SettingsPage> {
       );
 
   AlertDialog _deleteBookDialog(BuildContext context) => AlertDialog(
-        content: Text("Are you sure you want to delete ${widget.book.name}"),
+        content: Text("Are you sure you want to delete ${book.name}"),
         actions: [
           TextButton(
               onPressed: () {
-                widget.book.remove().then((_) {
+                book.remove().then((_) async {
                   Navigator.pop(context);
-                  context.read<BooksModel>().refresh(this.context);
+                  await provider.Provider.of<BooksModel>(this.context, listen: false).refresh(this.context);
                   Navigator.pop(this.context);
                   Navigator.pop(this.context);
                 }).catchError((ex) {
@@ -149,11 +150,11 @@ class _SettingsPageState extends State<SettingsPage> {
             )),
         ElevatedButton(
           onPressed: () {
-            widget.book.updateName(_bookNameController.text).then((newBook) {
-              context.read<BooksModel>().refresh(context);
+            book.updateName(_bookNameController.text).then((newBook) async {
+              await provider.Provider.of<BooksModel>(context, listen: false).refresh(context);
               Navigator.pop(context);
               Navigator.pop(context);
-              Navigator.pushNamed(context, "/book", arguments: BookArgs(newBook));
+              Navigator.pushNamed(context, "/book", arguments: BookArgs(newBook.id));
             }).catchError((ex) {
               log("Could not update book name", error: ex);
               context.showErrorSnackBar(message: "Could not set book name");
@@ -192,6 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           "Remove",
                         ),
                         icon: const Icon(Icons.block),
+                        
                       )
                     ],
                   )),
@@ -212,7 +214,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text("${widget.book.name} Settings")),
+        appBar: AppBar(title: Text("${book.name} Settings")),
         body: SingleChildScrollView(
           child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
             Card(
